@@ -1,53 +1,80 @@
-use std::{
-    env,
-    fs::File,
-    io::{BufRead, BufReader},
-    str::FromStr,
-};
+use std::{env, fs::File, io::{BufReader, BufRead}, str::FromStr};
 
-struct Position {
+struct PositionEx1 {
     x: usize,
     y: usize,
-    aim: usize
 }
 
-impl Position {
-    pub fn move_by_ex_1(self: Self, Movement { direction, quantity }: Movement) -> Position {
+impl Default for PositionEx1 {
+    fn default() -> Self {
+        Self { x: 0, y: 0 }
+    }
+}
+
+struct PositionEx2 {
+    x: usize,
+    y: usize,
+    aim: usize,
+}
+
+impl Default for PositionEx2 {
+    fn default() -> Self {
+        Self { x: 0, y: 0, aim: 0 }
+    }
+}
+
+trait Movable {
+    fn move_by(self: Self, movement: Movement) -> Self;
+}
+
+impl Movable for PositionEx1 {
+    fn move_by(
+        self: Self,
+        Movement {
+            direction,
+            quantity,
+        }: Movement,
+    ) -> Self {
         match direction {
-            Direction::Up => Position {
+            Direction::Up => Self {
                 x: self.x,
                 y: self.y - quantity,
-                aim: 0
             },
-            Direction::Down => Position {
+            Direction::Down => Self {
                 x: self.x,
                 y: self.y + quantity,
-                aim: 0
             },
-            Direction::Forward => Position {
+            Direction::Forward => Self {
                 x: self.x + quantity,
                 y: self.y,
-                aim: 0
             },
         }
     }
+}
 
-    pub fn move_by_ex_2(self: Self, Movement { direction, quantity }: Movement) -> Position {
+impl Movable for PositionEx2 {
+    fn move_by(
+        self: Self,
+        Movement {
+            direction,
+            quantity,
+        }: Movement,
+    ) -> Self {
         match direction {
-            Direction::Up => Position {
+            Direction::Up => Self {
                 x: self.x,
                 y: self.y,
-                aim: self.aim - quantity
+                aim: self.aim - quantity,
             },
-            Direction::Down => Position {
+            Direction::Down => Self {
                 x: self.x,
                 y: self.y,
-                aim: self.aim + quantity
+                aim: self.aim + quantity,
             },
-            Direction::Forward => Position {
+            Direction::Forward => Self {
                 x: self.x + quantity,
                 y: self.y + self.aim * quantity,
-                aim: self.aim
+                aim: self.aim,
             },
         }
     }
@@ -83,6 +110,17 @@ impl FromStr for Movement {
     }
 }
 
+fn compute_final_position<T>(input : std::io::Lines<BufReader<File>>) -> T
+where
+    T: Movable, T: Default
+{
+    let initial_position = T::default();
+    let movements = input.map(|line| line.unwrap().parse::<Movement>().unwrap());
+    movements.fold(initial_position, |position, movement| {
+        position.move_by(movement)
+    })
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 3 {
@@ -90,22 +128,15 @@ fn main() {
     }
     let filename = &args[1];
     let file = File::open(filename).unwrap();
-
+    let lines = BufReader::new(file).lines();
     let exercise = &args[2];
-    let movement_function = if exercise == "1" {
-        Position::move_by_ex_1
-    } else if exercise == "2" {
-        Position::move_by_ex_2
-    } else {
-        panic!("Invalid exercise");
-    };
 
-    let final_position = BufReader::new(file)
-        .lines()
-        .map(|l| Movement::from_str(l.unwrap().as_str()).unwrap())
-        .fold(
-            Position { x: 0, y: 0, aim: 0 },
-            movement_function,
-        );
-    println!("Final position: {:?}", final_position.x * final_position.y);
+    let result = if exercise == "1" {
+        let final_position = compute_final_position::<PositionEx1>(lines);
+        final_position.x * final_position.y
+    } else {
+        let final_position = compute_final_position::<PositionEx2>(lines);
+        final_position.x * final_position.y
+    };
+    println!("Final position: {:?}", result);
 }

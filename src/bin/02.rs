@@ -1,33 +1,17 @@
-use std::{env, fs::File, io::{BufReader, BufRead}, str::FromStr};
+use std::{
+    env,
+    fs::File,
+    io::{BufRead, BufReader},
+    str::FromStr,
+};
 
-struct PositionEx1 {
+struct Position {
     x: usize,
     y: usize,
+    aim: Option<usize>,
 }
 
-impl Default for PositionEx1 {
-    fn default() -> Self {
-        Self { x: 0, y: 0 }
-    }
-}
-
-struct PositionEx2 {
-    x: usize,
-    y: usize,
-    aim: usize,
-}
-
-impl Default for PositionEx2 {
-    fn default() -> Self {
-        Self { x: 0, y: 0, aim: 0 }
-    }
-}
-
-trait Movable {
-    fn move_by(self: Self, movement: Movement) -> Self;
-}
-
-impl Movable for PositionEx1 {
+impl Position {
     fn move_by(
         self: Self,
         Movement {
@@ -35,46 +19,40 @@ impl Movable for PositionEx1 {
             quantity,
         }: Movement,
     ) -> Self {
-        match direction {
-            Direction::Up => Self {
-                x: self.x,
-                y: self.y - quantity,
+        match self.aim {
+            Some(aim) => match direction {
+                Direction::Up => Self {
+                    x: self.x,
+                    y: self.y,
+                    aim: Some(aim - quantity),
+                },
+                Direction::Down => Self {
+                    x: self.x,
+                    y: self.y,
+                    aim: Some(aim + quantity),
+                },
+                Direction::Forward => Self {
+                    x: self.x + quantity,
+                    y: self.y + aim * quantity,
+                    aim: Some(aim),
+                },
             },
-            Direction::Down => Self {
-                x: self.x,
-                y: self.y + quantity,
-            },
-            Direction::Forward => Self {
-                x: self.x + quantity,
-                y: self.y,
-            },
-        }
-    }
-}
-
-impl Movable for PositionEx2 {
-    fn move_by(
-        self: Self,
-        Movement {
-            direction,
-            quantity,
-        }: Movement,
-    ) -> Self {
-        match direction {
-            Direction::Up => Self {
-                x: self.x,
-                y: self.y,
-                aim: self.aim - quantity,
-            },
-            Direction::Down => Self {
-                x: self.x,
-                y: self.y,
-                aim: self.aim + quantity,
-            },
-            Direction::Forward => Self {
-                x: self.x + quantity,
-                y: self.y + self.aim * quantity,
-                aim: self.aim,
+            None => match direction {
+                Direction::Up => Self {
+                    x: self.x,
+                    y: self.y - quantity,
+                    aim: None,
+                },
+                Direction::Down => Self {
+                    x: self.x,
+                    y: self.y + quantity,
+                    aim: None,
+                },
+                Direction::Forward => Self {
+                    x: self.x + quantity,
+                    y: self.y,
+                    aim: None,
+                },
             },
         }
     }
@@ -110,17 +88,6 @@ impl FromStr for Movement {
     }
 }
 
-fn compute_final_position<T>(input : std::io::Lines<BufReader<File>>) -> T
-where
-    T: Movable, T: Default
-{
-    let initial_position = T::default();
-    let movements = input.map(|line| line.unwrap().parse::<Movement>().unwrap());
-    movements.fold(initial_position, |position, movement| {
-        position.move_by(movement)
-    })
-}
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 3 {
@@ -128,15 +95,30 @@ fn main() {
     }
     let filename = &args[1];
     let file = File::open(filename).unwrap();
-    let lines = BufReader::new(file).lines();
     let exercise = &args[2];
 
-    let result = if exercise == "1" {
-        let final_position = compute_final_position::<PositionEx1>(lines);
-        final_position.x * final_position.y
+    let initial_position = if exercise == "1" {
+        Position {
+            x: 0,
+            y: 0,
+            aim: None,
+        }
+    } else if exercise == "2" {
+        Position {
+            x: 0,
+            y: 0,
+            aim: Some(0),
+        }
     } else {
-        let final_position = compute_final_position::<PositionEx2>(lines);
-        final_position.x * final_position.y
+        panic!("Invalid exercise");
     };
+
+    let final_position = BufReader::new(file)
+        .lines()
+        .map(|line| line.unwrap().parse::<Movement>().unwrap())
+        .fold(initial_position, Position::move_by);
+
+    let result = final_position.x * final_position.y;
+
     println!("Final position: {:?}", result);
 }

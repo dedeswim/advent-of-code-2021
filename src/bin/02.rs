@@ -12,43 +12,37 @@ struct Position {
 }
 
 impl Position {
-    fn move_by(
-        self: Self,
-        Movement {
-            direction,
-            quantity,
-        }: Movement,
-    ) -> Self {
+    fn move_by(self: Self, movement: Movement) -> Self {
         match self.aim {
-            Some(aim) => match direction {
-                Direction::Up => Self {
+            Some(aim) => match movement {
+                Movement::Up(quantity) => Self {
                     x: self.x,
                     y: self.y,
                     aim: Some(aim - quantity),
                 },
-                Direction::Down => Self {
+                Movement::Down(quantity) => Self {
                     x: self.x,
                     y: self.y,
                     aim: Some(aim + quantity),
                 },
-                Direction::Forward => Self {
+                Movement::Forward(quantity) => Self {
                     x: self.x + quantity,
                     y: self.y + aim * quantity,
                     aim: Some(aim),
                 },
             },
-            None => match direction {
-                Direction::Up => Self {
+            None => match movement {
+                Movement::Up(quantity) => Self {
                     x: self.x,
                     y: self.y - quantity,
                     aim: None,
                 },
-                Direction::Down => Self {
+                Movement::Down(quantity) => Self {
                     x: self.x,
                     y: self.y + quantity,
                     aim: None,
                 },
-                Direction::Forward => Self {
+                Movement::Forward(quantity) => Self {
                     x: self.x + quantity,
                     y: self.y,
                     aim: None,
@@ -58,15 +52,10 @@ impl Position {
     }
 }
 
-enum Direction {
-    Up,
-    Down,
-    Forward,
-}
-
-struct Movement {
-    direction: Direction,
-    quantity: usize,
+enum Movement {
+    Up(usize),
+    Down(usize),
+    Forward(usize),
 }
 
 impl FromStr for Movement {
@@ -74,17 +63,14 @@ impl FromStr for Movement {
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let elements = input.split_whitespace().collect::<Vec<&str>>();
-        let direction = match elements[0] {
-            "up" => Direction::Up,
-            "down" => Direction::Down,
-            "forward" => Direction::Forward,
+        let quantity = elements[1].parse::<usize>().unwrap();
+        let movement = match elements[0] {
+            "up" => Movement::Up(quantity),
+            "down" => Movement::Down(quantity),
+            "forward" => Movement::Forward(quantity),
             _ => panic!("Invalid direction"),
         };
-        let quantity = elements[1].parse::<usize>().unwrap();
-        Ok(Movement {
-            direction,
-            quantity,
-        })
+        Ok(movement)
     }
 }
 

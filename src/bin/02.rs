@@ -1,5 +1,7 @@
 use std::{
     env,
+    error::Error,
+    fmt,
     fs::File,
     io::{BufRead, BufReader},
     str::FromStr,
@@ -58,19 +60,31 @@ enum Movement {
     Forward(usize),
 }
 
+#[derive(Debug)]
+struct ParseMovementError {
+    movement: String,
+}
+impl fmt::Display for ParseMovementError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "invalid movement: {}", self.movement)
+    }
+}
+impl Error for ParseMovementError {}
+
 impl FromStr for Movement {
-    type Err = std::io::Error;
+    type Err = ParseMovementError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let elements = input.split_whitespace().collect::<Vec<&str>>();
         let quantity = elements[1].parse::<usize>().unwrap();
-        let movement = match elements[0] {
-            "up" => Movement::Up(quantity),
-            "down" => Movement::Down(quantity),
-            "forward" => Movement::Forward(quantity),
-            _ => panic!("Invalid direction"),
-        };
-        Ok(movement)
+        match elements[0] {
+            "up" => Ok(Movement::Up(quantity)),
+            "down" => Ok(Movement::Down(quantity)),
+            "forward" => Ok(Movement::Forward(quantity)),
+            _ => Err(ParseMovementError {
+                movement: elements[0].to_string(),
+            }),
+        }
     }
 }
 

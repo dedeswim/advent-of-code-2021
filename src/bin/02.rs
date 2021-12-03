@@ -2,10 +2,9 @@ use std::{
     env,
     error::Error,
     fmt,
-    fs::File,
-    io::{BufRead, BufReader},
     str::FromStr,
 };
+use advent_of_code_2021::utils::lines_from_file;
 
 struct Position {
     x: usize,
@@ -64,11 +63,13 @@ enum Movement {
 struct ParseMovementError {
     movement: String,
 }
+
 impl fmt::Display for ParseMovementError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid movement: {}", self.movement)
     }
 }
+
 impl Error for ParseMovementError {}
 
 impl FromStr for Movement {
@@ -94,7 +95,6 @@ fn main() {
         panic!("Usage: {} input-file exercise", args[0]);
     }
     let filename = &args[1];
-    let file = File::open(filename).unwrap();
     let exercise = &args[2];
 
     let initial_position = if exercise == "1" {
@@ -113,8 +113,7 @@ fn main() {
         panic!("Invalid exercise");
     };
 
-    let final_position = BufReader::new(file)
-        .lines()
+    let final_position = lines_from_file(filename)
         .map(|line| line.unwrap().parse::<Movement>().unwrap())
         .fold(initial_position, Position::move_by);
 

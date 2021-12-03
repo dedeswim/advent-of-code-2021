@@ -1,8 +1,5 @@
-use std::{
-    env,
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::env;
+use advent_of_code_2021::utils::lines_from_file;
 
 fn main() {
     // Not the most efficient way to implement this, as the whole stdio stream gets read,
@@ -17,10 +14,7 @@ fn main() {
     let filename = &args[1];
     let window_size: usize = args[2].parse().expect("window size must be a number");
 
-    let file = File::open(filename).unwrap();
-
-    let total = BufReader::new(file)
-        .lines()
+    let total = lines_from_file(filename)
         .map(|l| l.unwrap().parse().unwrap()) // Parse ints
         .collect::<Vec<i32>>()
         .windows(window_size) // Create sliding window
